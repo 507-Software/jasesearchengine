@@ -8,3 +8,7 @@ h1 {
   text-align: center;
 }
 
+div {
+  color: white;
+  background-color: black;
+}
