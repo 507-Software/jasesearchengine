@@ -6,9 +6,27 @@ title {
 h1 {
   font-family: monospace;
   text-align: center;
+  
 }
 
-div {
+input{
+  position:absolute;
   color: white;
-  background-color: black;
+  background-color:black;
+  border:none;
+  border-radius: 5px;
+  left:45%;
+  top:40%;
+  font-size:20px;
+}
+
+button {
+  position:absolute;
+  left:62%;
+  top:40%;
+  color:white;
+  background-color:black;
+  border:none;
+  border-radius:5px;
+  font-size:20px;
 }
