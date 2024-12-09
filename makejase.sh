@@ -1,5 +1,9 @@
 #!/bin/bash
-
+clear
+echo "J.A.S.E. v2.0.0 Installer."
+echo "This installer will clone all data from the J.A.S.E. Github and setup the Virtual Enviornment for you."
+echo "Have fun while using J.A.S.E."
+sleep 5
 # Check if git is installed
 if ! command -v git &> /dev/null
 then
