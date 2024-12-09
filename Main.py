@@ -1,3 +1,12 @@
+"""
+Hello! Welcome to J.A.S.E. (Just Another Search Engine). This is a simple search engine that allows you to search for websites that have been crawled. You can also add new websites to the database by crawling them.
+
+**To crawl a website**: Run this script normally, and it will ask you to enter a website URL to crawl.
+
+**To run this as a server**: Use the command `gunicorn -w 4 -b 0.0.0.0:8000 main:app`
+
+**License Notice**: This software uses the GPL license, so you can use it for free but you can't sell it.
+"""
 from flask import Flask, render_template, request
 import os
 import sqlite3
@@ -25,14 +34,15 @@ def init_db():
 init_db()
 
 def add_to_database(url, title):
-    conn = sqlite3.connect('websites.db')
-    c = conn.cursor()
     try:
-        c.execute("INSERT INTO websites (url, title) VALUES (?, ?)", (url, title))
+        conn = sqlite3.connect('websites.db')
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO websites (url, title) VALUES (?, ?)", (url, title))
         conn.commit()
-    except sqlite3.IntegrityError:
-        pass
-    conn.close()
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    finally:
+        conn.close()
 
 def is_crawled(url):
     conn = sqlite3.connect('websites.db')
@@ -51,30 +61,58 @@ def get_all_links(url):
     except requests.RequestException:
         return []
 
-def crawl(url, max_depth):
+def get_page_title(url):
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.title.string if soup.title else 'No title'
+    except requests.RequestException:
+        return 'No title'
+
+def crawl(url, depth=2):
+    queue = [(url, depth)]
     visited = set()
-    queue = [(url, 0)]
+
     while queue:
-        current_url, depth = queue.pop(0)
-        if depth > max_depth:
-            continue
-        if current_url in visited or is_crawled(current_url):
+        current_url, current_depth = queue.pop(0)
+        if current_url in visited:
             continue
         visited.add(current_url)
-        print(f"Crawling: {current_url} at depth {depth}")
-        for link in get_all_links(current_url):
-            if link not in visited and not is_crawled(link):
-                queue.append((link, depth + 1))
-        time.sleep(0.1)  # Add a delay between requests
 
-def load_json_and_crawl(json_file):
+        print(f"Crawling: {current_url}")
+
+        # Get page title
+        title = get_page_title(current_url)
+        print(f"Title: {title}")
+
+        # Add to database
+        add_to_database(current_url, title)
+
+        if current_depth > 0:
+            links = get_all_links(current_url)
+            for link in links:
+                if link not in visited:
+                    queue.append((link, current_depth - 1))
+        time.sleep(0.1)  # Delay between requests
+
+def load_json(json_file):
     with open(json_file, 'r') as file:
         data = json.load(file)
-        for entry in data:
-            url = entry.get('url')
-            depth = entry.get('depth', 1)  # Default depth is 1 if not specified
-            if url and not is_crawled(url):
-                crawl(url, depth)
+    return data
+
+def select_url_and_crawl():
+    urls = load_json('websites.json')
+    print("Select a URL to crawl:")
+    for i, entry in enumerate(urls):
+        print(f"{i + 1}. {entry['url']} (Depth: {entry['depth']})")
+    
+    choice = int(input("Enter the number of the URL to hack: ")) - 1
+    if 0 <= choice < len(urls):
+        url = urls[choice]['url']
+        depth = urls[choice]['depth']
+        crawl(url, depth)
+    else:
+        print("Invalid choice. Exiting.")
 
 @app.route('/')
 def index():
@@ -98,6 +136,8 @@ def search():
     return render_template('results.html', query=query, results=results)
 
 if __name__ == "__main__":
-    # Load JSON data and start crawling when the application starts
-    load_json_and_crawl('websites.json')
-    app.run(debug=True)
+    # Uncomment the following line to run the Flask app
+    # app.run(debug=True)
+    
+    # Run the CLI for selecting and crawling URLs
+    select_url_and_crawl()
