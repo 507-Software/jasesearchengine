@@ -35,6 +35,7 @@ fi
 git clone https://github.com/507-Software/jasesearchengine.git
 
 # Wait for the clone to complete
+echo "Waiting For Process..."
 sleep 10
 
 # Navigate to the project directory
