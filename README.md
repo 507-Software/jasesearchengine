@@ -1,2 +1,2 @@
-J.A.S.E
-is any other search engine so you can go wherever you want!
+<h1>J.A.S.E</h1>
+Run makejase.sh for the latest data and updates.
