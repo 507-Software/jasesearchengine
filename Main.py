@@ -106,7 +106,7 @@ def select_url_and_crawl():
     for i, entry in enumerate(urls):
         print(f"{i + 1}. {entry['url']} (Depth: {entry['depth']})")
     
-    choice = int(input("Enter the number of the URL to hack: ")) - 1
+    choice = int(input("Enter the number of the URL to crawl: ")) - 1
     if 0 <= choice < len(urls):
         url = urls[choice]['url']
         depth = urls[choice]['depth']
