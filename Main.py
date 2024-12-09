@@ -1,5 +1,5 @@
 """
-Hello! Welcome to J.A.S.E. (Just Another Search Engine). This is a simple search engine that allows you to search for websites that have been crawled. You can also add new websites to the database by crawling them.
+Hello! Welcome to J.A.S.E. (Just Another Search Engine). This is a simple search engine that allows you to search for websites that have been crawled. You can also add new websites to the database by [...]
 
 **To crawl a website**: Run this script normally, and it will ask you to enter a website URL to crawl.
 
@@ -101,18 +101,25 @@ def load_json(json_file):
     return data
 
 def select_url_and_crawl():
-    urls = load_json('websites.json')
-    print("Select a URL to crawl:")
-    for i, entry in enumerate(urls):
-        print(f"{i + 1}. {entry['url']} (Depth: {entry['depth']})")
+    choice = input("Enter a custom URL to crawl or press Enter to select from predefined URLs: ").strip()
     
-    choice = int(input("Enter the number of the URL to crawl: ")) - 1
-    if 0 <= choice < len(urls):
-        url = urls[choice]['url']
-        depth = urls[choice]['depth']
+    if choice:
+        url = choice
+        depth = int(input("Enter the crawling depth: ").strip())
         crawl(url, depth)
     else:
-        print("Invalid choice. Exiting.")
+        urls = load_json('websites.json')
+        print("Select a URL to crawl:")
+        for i, entry in enumerate(urls):
+            print(f"{i + 1}. {entry['url']} (Depth: {entry['depth']})")
+        
+        choice = int(input("Enter the number of the URL to crawl: ")) - 1
+        if 0 <= choice < len(urls):
+            url = urls[choice]['url']
+            depth = urls[choice]['depth']
+            crawl(url, depth)
+        else:
+            print("Invalid choice. Exiting.")
 
 @app.route('/')
 def index():
