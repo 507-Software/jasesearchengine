@@ -10,7 +10,6 @@ Hello! Welcome to J.A.S.E. (Just Another Search Engine). This is a simple search
 from flask import Flask, render_template, request
 import os
 import sqlite3
-import json
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -22,7 +21,6 @@ app.config['UPLOAD_FOLDER'] = 'recordings'
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# Initialize the database
 def init_db():
     conn = sqlite3.connect('websites.db')
     c = conn.cursor()
@@ -36,8 +34,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-init_db()
-
 def add_to_database(url, title):
     try:
         conn = sqlite3.connect('websites.db')
@@ -49,30 +45,24 @@ def add_to_database(url, title):
     finally:
         conn.close()
 
-def is_crawled(url):
-    conn = sqlite3.connect('websites.db')
-    c = conn.cursor()
-    c.execute("SELECT 1 FROM websites WHERE url = ?", (url,))
-    result = c.fetchone()
-    conn.close()
-    return result is not None
+def get_page_title(url):
+    try:
+        response = requests.get(url, timeout=5)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.title.string.strip() if soup.title and soup.title.string else 'No Title'
+    except requests.RequestException as e:
+        print(f"Error fetching title from {url}: {e}")
+        return 'No Title'
 
 def get_all_links(url):
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         soup = BeautifulSoup(response.text, 'html.parser')
         links = [urljoin(url, a['href']) for a in soup.find_all('a', href=True)]
         return links
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(f"Error fetching links from {url}: {e}")
         return []
-
-def get_page_title(url):
-    try:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        return soup.title.string if soup.title else 'No title'
-    except requests.RequestException:
-        return 'No title'
 
 def crawl(url, depth=2):
     queue = [(url, depth)]
@@ -100,25 +90,6 @@ def crawl(url, depth=2):
                     queue.append((link, current_depth - 1))
         time.sleep(0.1)  # Delay between requests
 
-def load_json(json_file):
-    with open(json_file, 'r') as file:
-        data = json.load(file)
-    return data
-
-def select_url_and_crawl():
-    urls = load_json('websites.json')
-    print("Select a URL to crawl:")
-    for i, entry in enumerate(urls):
-        print(f"{i + 1}. {entry['url']} (Depth: {entry['depth']})")
-    
-    choice = int(input("Enter the number of the URL to hack: ")) - 1
-    if 0 <= choice < len(urls):
-        url = urls[choice]['url']
-        depth = urls[choice]['depth']
-        crawl(url, depth)
-    else:
-        print("Invalid choice. Exiting.")
-
 @app.route('/')
 def index():
     conn = sqlite3.connect('websites.db')
@@ -128,21 +99,24 @@ def index():
     conn.close()
     return render_template('index.html', website_count=website_count)
 
-@app.route('/search', methods=['GET', 'POST'])
+@app.route('/search', methods=['GET'])
 def search():
-    query = request.form.get('query')
+    query = request.args.get('query')
     results = []
     if query:
         conn = sqlite3.connect('websites.db')
         c = conn.cursor()
-        c.execute("SELECT url, title FROM websites WHERE title LIKE ?", ('%' + query + '%',))
+        c.execute("SELECT url, title FROM websites WHERE title LIKE ? OR url LIKE ?", ('%' + query + '%', '%' + query + '%'))
         results = [{'url': row[0], 'title': row[1]} for row in c.fetchall()]
         conn.close()
     return render_template('results.html', query=query, results=results)
 
+def select_url_and_crawl():
+    start_url = input("Enter the URL to start crawling: ")
+    crawl(start_url)
+
 if __name__ == "__main__":
+    init_db()
+    select_url_and_crawl()
     # Uncomment the following line to run the Flask app
     # app.run(debug=True)
-    
-    # Run the CLI for selecting and crawling URLs
-    select_url_and_crawl()
