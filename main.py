@@ -1,5 +1,5 @@
 """
-Hello! Welcome to J.A.S.E. (Just Another Search Engine). This is a simple search engine that allows you to search for websites that have been crawled. You can also add new websites to the database by crawling them.
+Hello! Welcome to J.A.S.E. (Just Another Search Engine). This is a simple search engine that allows you to search for websites that have been crawled. You can also add new websites to the database [...]
 
 **To crawl a website**: Run this script normally, and it will ask you to enter a website URL to crawl.
 
